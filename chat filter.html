@@ -1,0 +1,79 @@
+<html>
+    <head>
+        <title>twn's chat filter</title>
+    </head>
+    <body>
+        <h1>twn's SmartChatFilter v1.0</h1>
+        <textarea class="inp" onchange="doFiltering(document.querySelector('.inp').value)"></textarea>
+        <div>
+            <table>
+                <tbody class="tbs">
+                    <tr>
+                        <th>Word</th>
+                        <th>Probability</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </body>
+    <script>
+        function resetTable(){
+            document.querySelector(".tbs").innerHTML = "";
+        };
+        function updateTable(word,rank,flagged){
+            let ll = document.createElement("tr");
+            let l1 = document.createElement("th");
+            l1.innerHTML = word;
+            ll.append(l1);
+            let l2 = document.createElement("tr");
+            l2.innerHTML = rank;
+            ll.append(l2);
+            document.querySelector(".tbs").append(ll);
+        };
+        async function doFiltering(text){
+            document.querySelector(".inp").value=(await filter(text));
+        };
+        async function filter(text){
+            let badWords = await fetch("https://corsproxy.io/?https://www.cs.cmu.edu/~biglou/resources/bad-words.txt");
+            badWords = await badWords.text();
+            badWords = await badWords.split("\n");
+            const inputWords = text.split(" ");
+            let filteredWords = [];
+            let idx = 0;
+            let medr = 0;
+            inputWords.forEach(element => {
+                let flaggedWords = -2;
+                let ranking = 1;
+                badWords.forEach(el2 => {
+                    if(element.includes(el2.toString())){
+                        flaggedWords += ranking;
+                        ranking = ranking*1.1;
+                    }else{
+                        ranking*0.9;
+                    };
+                    medr = ((medr+ranking)/2);
+                });
+                if(flaggedWords>medr){
+                    filteredWords.push("####");
+                }else{
+                    filteredWords.push(element);
+                };
+                console.log(element+", "+flaggedWords.toString())
+                updateTable(element,ranking,(flaggedWords>medr));
+                idx+=1;
+            });
+            console.log("Average ranking: "+medr);
+            return await filteredWords.join(" ");
+        };
+    </script>
+    <style>
+        .inp{
+            width: 100%;
+            height: 50%;
+            resize: none;
+        }
+        body{
+            margin: 0px;
+        }
+    </style>
+</html>
